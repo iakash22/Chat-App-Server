@@ -48,12 +48,10 @@ io.use((socket, next) => {
 
 io.on("connection", (socket) => {
     const user = socket.user;
-    // console.log(user);
 
     userSocketIDs.set(user._id.toString(), socket.id);
 
-    console.log("User Connected!", socket.id);
-    // console.log(userSocketIDs);
+    // console.log("User Connected!", socket.id);
 
     socket.on(NEW_MESSAGE, async ({ chatId, members, message }) => {
         const messageForRealTime = {
@@ -77,7 +75,6 @@ io.on("connection", (socket) => {
         io.to(usersSocket).emit(NEW_MESSAGE, { chatId, message: messageForRealTime });
         io.to(usersSocket).emit(NEW_MESSAGE_ALERT, { chatId });
 
-        // console.log(NEW_MESSAGE, messageForRealTime);
         try {
             await Message.create(messageForDB);
         } catch (error) {
@@ -85,30 +82,24 @@ io.on("connection", (socket) => {
         }
     });
 
-    socket.on(START_TYPING, ({ members, chatId }) => {
-        console.log("typing", members, chatId);
-        
+    socket.on(START_TYPING, ({ members, chatId }) => {        
         const memberSockets = getSocketIDs(members);
         socket.to(memberSockets).emit(START_TYPING, { chatId });
     });
 
     socket.on(STOP_TYPING, ({ members, chatId }) => {
-        console.log("Stop typing", members, chatId);
-        
         const memberSockets = getSocketIDs(members);
         socket.to(memberSockets).emit(STOP_TYPING, { chatId });
     });
 
     socket.on(CHAT_JOINED, ({ members, userId }) => {
         onlineUsers.add(userId.toString());
-        // console.log("Chat Joined", userId);
         const memberSockets = getSocketIDs(members);
         io.to(memberSockets).emit(ONLINE_USER, Array.from(onlineUsers));        
     });
 
     socket.on(CHAT_LEAVED, ({ members, userId }) => {
         onlineUsers.delete(userId.toString());
-        // console.log("Chat LEAVED", userId);
 
         const memberSockets = getSocketIDs(members);
         io.to(memberSockets).emit(ONLINE_USER, Array.from(onlineUsers)); 
@@ -128,8 +119,9 @@ server.listen(PORT, () => {
     console.log(`Server Listen on port ${PORT}`);
 })
 
-app.get('/', (req, res) => {
-    res.send('Hello Word');
-})
+// app.get('/', (req, res) => {
+//     res.send('Hello Word');
+// })
+
 dbConnect();
 // createUser(10);

@@ -7,6 +7,7 @@ const { getOtherMember } = require('../lib/helper');
 const User = require("../models/user");
 const Message = require("../models/message");
 const { uploadImageCloudinary } = require("../utils/imageUploader");
+const chat = require("../models/chat");
 
 exports.newGroupChat = TryCatch(async (req, res, next) => {
     const { name, members } = req.body;
@@ -51,12 +52,13 @@ exports.getMyChat = TryCatch(async (req, res) => {
 
     const tranformData = chats.map(({ _id, name, groupChat, members }) => {
         const otherMember = getOtherMember(members, id);
-
+        
         return {
             _id,
             groupChat,
             avatar: groupChat ? (
-                members.slice(0, 3).map(({ avatar }) => avatar.url)
+                members.slice(0, 3).map(({ avatar }) => (avatar.url)
+                )
             ) : (
                 [otherMember.avatar.url]
             ),
@@ -195,7 +197,7 @@ exports.removeMembers = TryCatch(async (req, res, next) => {
     await chat.save();
 
     emitEvent(req, ALERT, chat.members, { message: `${removeUser.name} has removed from the group`, chatId });
-    emitEvent(req, REFETCH_CHATS, allChatMemmbers, {userId, chatId});
+    emitEvent(req, REFETCH_CHATS, allChatMemmbers, { userId, chatId });
 
     return res.status(200).json({
         succcess: true,
@@ -239,7 +241,7 @@ exports.leaveGroup = TryCatch(async (req, res, next) => {
     await chat.save();
 
     emitEvent(req, ALERT, chat.members, { message: `${user.name} has left the group`, chatId });
-    emitEvent(req, REFETCH_CHATS, chat.members, {chatId, userId : id});
+    emitEvent(req, REFETCH_CHATS, chat.members, { chatId, userId: id });
 
     return res.status(200).json({
         success: true,
