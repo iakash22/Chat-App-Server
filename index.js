@@ -13,7 +13,7 @@ const userRoute = require('./routers/user');
 const chatRoute = require('./routers/chat');
 const adminRoute = require('./routers/admin');
 const { errorMiddleware } = require('./middlewares/error');
-const { NEW_MESSAGE, NEW_MESSAGE_ALERT, START_TYPING, STOP_TYPING, REFETCH_CHATS, CHAT_JOINED, CHAT_LEAVED, ONLINE_USER } = require('./constants/events');
+const { NEW_MESSAGE, NEW_MESSAGE_ALERT, START_TYPING, STOP_TYPING, REFETCH_CHATS, CHAT_JOINED, CHAT_LEAVED, ONLINE_USER, CALL_USER, RECEIVE_CALL } = require('./constants/events');
 const { userSocketIDs, onlineUsers } = require('./constants/userMap');
 const { getSocketIDs } = require('./lib/helper');
 const Message = require('./models/message');
@@ -51,7 +51,7 @@ io.on("connection", (socket) => {
 
     userSocketIDs.set(user._id.toString(), socket.id);
 
-    // console.log("User Connected!", socket.id);
+    console.log("User Connected!", socket.id);
 
     socket.on(NEW_MESSAGE, async ({ chatId, members, message }) => {
         const messageForRealTime = {
@@ -82,7 +82,7 @@ io.on("connection", (socket) => {
         }
     });
 
-    socket.on(START_TYPING, ({ members, chatId }) => {        
+    socket.on(START_TYPING, ({ members, chatId }) => {
         const memberSockets = getSocketIDs(members);
         socket.to(memberSockets).emit(START_TYPING, { chatId });
     });
@@ -95,21 +95,46 @@ io.on("connection", (socket) => {
     socket.on(CHAT_JOINED, ({ members, userId }) => {
         onlineUsers.add(userId.toString());
         const memberSockets = getSocketIDs(members);
-        io.to(memberSockets).emit(ONLINE_USER, Array.from(onlineUsers));        
+        io.to(memberSockets).emit(ONLINE_USER, Array.from(onlineUsers));
     });
 
     socket.on(CHAT_LEAVED, ({ members, userId }) => {
         onlineUsers.delete(userId.toString());
 
         const memberSockets = getSocketIDs(members);
-        io.to(memberSockets).emit(ONLINE_USER, Array.from(onlineUsers)); 
+        io.to(memberSockets).emit(ONLINE_USER, Array.from(onlineUsers));
     })
 
+    socket.emit('ME', socket.id);
+
+    socket.on('CALL_USER',
+        ({ userToCall, signalData, from, name, callType, avatar, chatId }) => {
+            // console.log(userToCall, signalData, from, name, callType, avatar);
+            // console.log(userToCall);
+            const membersSocketIds = getSocketIDs(userToCall);
+            // console.log("membersSocketIds", membersSocketIds);
+            io.to(membersSocketIds).emit(CALL_USER, { signal: signalData, callerId: from, callerName: name, callType, callerAvatar: avatar, chatId });
+            // io.to(membersSocketIds).emit(RECEIVE_CALL, { signal: signalData, callerId: from, callerName: name, callType, callerAvatar: avatar,chatId });
+        });
+
+    socket.on('ANSWER_CALL', ({ signal, id }) => {
+        console.log("ANSWER_CALL id", id);
+        const socketId = userSocketIDs.get(id);
+        // console.log(id, socketId);
+        io.to(socketId).emit('CALL_ACCEPTED', signal);
+    });
+
+    socket.on("CALL_ENDED", ({ id, args }) => {
+        console.log("CALL_ENDED",id);
+        const socketIds = getSocketIDs(id);
+        io.to(socketIds).emit("CALL_ENDED", args);
+    })
     socket.on("disconnect", () => {
         console.log("User Disconnected!");
         userSocketIDs.delete(user._id.toString());
         onlineUsers.delete(user._id.toString());
         socket.broadcast.emit(ONLINE_USER, Array.from(onlineUsers));
+        socket.broadcast.emit('CALL_ENDED');
     });
 })
 

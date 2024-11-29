@@ -1,7 +1,7 @@
 const express = require('express');
 const { errorMiddleware } = require('../middlewares/error');
 const { isAuthenticate, isUser } = require('../middlewares/auth');
-const { newGroupChat, getMyChat, getMyGroups, addMembers, removeMembers, leaveGroup, sendAttachments, getChatDetails, renameGroupName, deleteChat, getMessages } = require('../controllers/chat');
+const { newGroupChat, getMyChat, getMyGroups, addMembers, removeMembers, leaveGroup, sendAttachments, getChatDetails, renameGroupName, deleteChat, getMessages, getChatMembers } = require('../controllers/chat');
 const { attachmentsMulter } = require('../middlewares/multer');
 const { newGroupValidator, validatorHandler, addMembersValidator, removeValidator, paramsValidator, sendAttachmentsValidator, renameValidator } = require('../lib/validator');
 
@@ -29,6 +29,8 @@ router.route('/:id')
     .get(paramsValidator(), validatorHandler, getChatDetails)
     .put(renameValidator(), validatorHandler, renameGroupName)
     .delete(paramsValidator(), validatorHandler, deleteChat);
+
+router.get('/members/:id', getChatMembers);
 
 router.use(errorMiddleware);
 

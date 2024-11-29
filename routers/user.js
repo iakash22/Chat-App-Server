@@ -1,5 +1,5 @@
 const express = require('express');
-const { register, login, getMyProfile, searchUser, sendRequest, acceptRequest, getMyNotifications, getMyFriends, logout } = require('../controllers/user');
+const { register, login, getMyProfile, searchUser, sendRequest, acceptRequest, getMyNotifications, getMyFriends, logout, getProfile } = require('../controllers/user');
 const { singleAvatar } = require('../middlewares/multer');
 const { errorMiddleware } = require('../middlewares/error');
 const { isAuthenticate } = require('../middlewares/auth');
@@ -13,6 +13,7 @@ router.get('/', (req, res) => {
 
 router.post('/register', singleAvatar, registerValidator(), validatorHandler, register);
 router.post('/login', loginValidator(), validatorHandler, login);
+router.get('/profile/:username', getProfile);
 router.post('/logout', logout);
 
 

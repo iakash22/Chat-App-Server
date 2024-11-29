@@ -85,6 +85,26 @@ exports.getMyProfile = TryCatch(async (req, res, next) => {
     })
 })
 
+exports.getProfile = TryCatch(async (req, res, next) => {
+    const { username } = req.params;
+
+    if (!username) {
+        return next(new ErrorHandler('username is not provide'));
+    }
+
+    const data = User.findOne({ username });
+    
+    if (!data) {
+        return next(new ErrorHandler('', 404));
+    }
+
+    return res.status(200).json({
+        success: true,
+        message: "Data Fetched",
+        username,
+    });
+})
+
 exports.searchUser = TryCatch(async (req, res, next) => {
     const { name = "" } = req.query;
 

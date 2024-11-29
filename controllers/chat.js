@@ -7,7 +7,6 @@ const { getOtherMember } = require('../lib/helper');
 const User = require("../models/user");
 const Message = require("../models/message");
 const { uploadImageCloudinary } = require("../utils/imageUploader");
-const chat = require("../models/chat");
 
 exports.newGroupChat = TryCatch(async (req, res, next) => {
     const { name, members } = req.body;
@@ -34,7 +33,7 @@ exports.newGroupChat = TryCatch(async (req, res, next) => {
         success: true,
         message: "Group Created"
     })
-})
+});
 
 exports.getMyChat = TryCatch(async (req, res) => {
     const id = req.user._id;
@@ -52,7 +51,7 @@ exports.getMyChat = TryCatch(async (req, res) => {
 
     const tranformData = chats.map(({ _id, name, groupChat, members }) => {
         const otherMember = getOtherMember(members, id);
-        
+
         return {
             _id,
             groupChat,
@@ -77,7 +76,7 @@ exports.getMyChat = TryCatch(async (req, res) => {
         success: true,
         data: tranformData,
     })
-})
+});
 
 exports.getMyGroups = TryCatch(async (req, res) => {
     const id = req.user._id;
@@ -100,7 +99,7 @@ exports.getMyGroups = TryCatch(async (req, res) => {
         success: true,
         data: group,
     })
-})
+});
 
 exports.addMembers = TryCatch(async (req, res, next) => {
     const { chatId, members } = req.body;
@@ -156,7 +155,7 @@ exports.addMembers = TryCatch(async (req, res, next) => {
         message: `${allUserName} has been added in the group successfully`,
         data,
     })
-})
+});
 
 exports.removeMembers = TryCatch(async (req, res, next) => {
     const { userId, chatId } = req.body;
@@ -247,7 +246,7 @@ exports.leaveGroup = TryCatch(async (req, res, next) => {
         success: true,
         message: `${user.name} leave the group successfully`,
     })
-})
+});
 
 exports.sendAttachments = TryCatch(async (req, res, next) => {
     const { chatId } = req.body;
@@ -307,7 +306,7 @@ exports.sendAttachments = TryCatch(async (req, res, next) => {
         success: true,
         message,
     })
-})
+});
 
 exports.getChatDetails = TryCatch(async (req, res, next) => {
     const chatId = req.params.id;
@@ -324,9 +323,11 @@ exports.getChatDetails = TryCatch(async (req, res, next) => {
             members: { $in: [userId] },
         }
     )
-        .populate("members", "name avatar")
+        .populate("members", "name avatar username")
         .lean()
         .exec();
+
+    // console.log(chat);
 
     if (!chat) {
         return next(new ErrorHandler("chat is not found!", 404));
@@ -334,11 +335,12 @@ exports.getChatDetails = TryCatch(async (req, res, next) => {
 
     // console.log(chat);
     if (populate === "true") {
-        chat.members = chat.members.map(({ _id, name, avatar }) => (
+        chat.members = chat.members.map(({ _id, name, avatar, username }) => (
             {
                 _id,
                 name,
                 avatar: avatar.url,
+                username,
             }
         ));
 
@@ -347,13 +349,24 @@ exports.getChatDetails = TryCatch(async (req, res, next) => {
             chat,
         });
     } else {
-        chat.members = chat.members.map(({ _id }) => (
-            _id
-        ));
-        // console.log(chat);
+        const { members, groupChat } = chat;
+
+        const otherMember = getOtherMember(chat.members, userId);
+        const transformData = {
+            ...chat,
+            avatar: groupChat ? (
+                members.slice(0, 3).map(({ avatar }) => (avatar.url)
+                )
+            ) : (
+                [otherMember.avatar.url]
+            ),
+            friendName : groupChat ? "" : otherMember.name,
+            members: members.map(({ _id }) => _id),
+        }
+
         return res.status(200).json({
             success: true,
-            chat,
+            chat: transformData,
         });
     }
 });
@@ -390,7 +403,7 @@ exports.renameGroupName = TryCatch(async (req, res, next) => {
         success: true,
         message: "Rename group suceesfully",
     });
-})
+});
 
 exports.deleteChat = TryCatch(async (req, res, next) => {
     const chatId = req.params.id;
@@ -441,7 +454,7 @@ exports.deleteChat = TryCatch(async (req, res, next) => {
         message: `${chat.name} group deleted`
     })
 
-})
+});
 
 exports.getMessages = TryCatch(async (req, res, next) => {
     const chatId = req.params.id;
@@ -492,4 +505,33 @@ exports.getMessages = TryCatch(async (req, res, next) => {
         data: messages.reverse(),
         totalPages,
     })
+});
+
+exports.getChatMembers = TryCatch(async (req, res, next) => {
+    const chatId = req.params.id;
+    const userId = req.user._id;
+
+    const chat = await Chat.findById(chatId).populate('members', 'avatar name');
+    if (!chat) {
+        return next(new ErrorHandler('Chat not found', 404));
+    }
+    const { members, groupChat, _id, name } = chat;
+    const filterMembers = members
+        .filter((member) => member._id.toString() !== userId.toString())
+    const data = {
+        _id,
+        avatar : groupChat ? members.slice(0, 3).map(({ avatar }) => (avatar.url)
+                ) : (
+                [filterMembers[0].avatar.url]
+            ),
+        members: filterMembers.map(({_id,name}) => ({_id,name})),
+        groupName: groupChat ? name : "",
+        groupChat,
+    }
+    return res.status(200).json({
+        success: true,
+        message: "Members fetched",
+        data,
+        chatId,
+    });
 })
