@@ -108,12 +108,14 @@ io.on("connection", (socket) => {
     socket.emit('ME', socket.id);
 
     socket.on('CALL_USER',
-        ({ userToCall, signalData, from, name, callType, avatar, chatId }) => {
+        ({ userToCall, signalData, from, name, callType, avatar, chatId, videoEnabled }) => {
+            // console.log(signalData);
             // console.log(userToCall, signalData, from, name, callType, avatar);
             // console.log(userToCall);
             const membersSocketIds = getSocketIDs(userToCall);
             // console.log("membersSocketIds", membersSocketIds);
             io.to(membersSocketIds).emit(CALL_USER, { signal: signalData, callerId: from, callerName: name, callType, callerAvatar: avatar, chatId });
+            io.to(membersSocketIds).emit('REMOTE_VIDEO_ENABLE', { remoteVideoEnable: videoEnabled });
             // io.to(membersSocketIds).emit(RECEIVE_CALL, { signal: signalData, callerId: from, callerName: name, callType, callerAvatar: avatar,chatId });
         });
 
@@ -124,8 +126,18 @@ io.on("connection", (socket) => {
         io.to(socketId).emit('CALL_ACCEPTED', signal);
     });
 
+    socket.on('VIDEO_ENABLE', ({ callerIDs, videoEnable }) => {
+        const socketIds = getSocketIDs(callerIDs);
+        io.to(socketIds).emit('REMOTE_VIDEO_ENABLE', { remoteVideoEnable: videoEnable });
+    });
+
+    socket.on('AUDIO_ENABLE', ({ callerIDs, audioEnable }) => {
+        const socketIds = getSocketIDs(callerIDs);
+        io.to(socketIds).emit('REMOTE_AUDIO_ENABLE', { remoteAudioEnable: audioEnable });
+    });
+
     socket.on("CALL_ENDED", ({ id, args }) => {
-        console.log("CALL_ENDED",id);
+        // console.log("CALL_ENDED", id);
         const socketIds = getSocketIDs(id);
         io.to(socketIds).emit("CALL_ENDED", args);
     })
