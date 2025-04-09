@@ -19,6 +19,8 @@ const { getSocketIDs } = require('./lib/helper');
 const Message = require('./models/message');
 const { corsOptions } = require('./configs/corsOptions');
 
+const routes = require('./routers');
+
 const PORT = process.env.PORT || 3000;
 const app = express();
 const server = createServer(app);
@@ -33,6 +35,10 @@ app.use(express.urlencoded({
 }));
 app.use(cookieParser());
 app.use(cors(corsOptions));
+
+app.use('/api/v1/auth', routes.authRoutes);
+app.use('/api/v1/profile', routes.profileRoutes);
+app.use('/api/v1/request', routes.requestRoutes);
 
 app.use('/api/v1/user', userRoute);
 app.use('/api/v1/chat', chatRoute);
@@ -152,7 +158,10 @@ io.on("connection", (socket) => {
 
 app.use(errorMiddleware);
 
-server.listen(PORT, () => {
+// server.listen(PORT, () => {
+//     console.log(`Server Listen on port ${PORT}`);
+// })
+server.listen(PORT, '0.0.0.0', () => {
     console.log(`Server Listen on port ${PORT}`);
 })
 

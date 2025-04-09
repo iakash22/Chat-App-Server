@@ -4,10 +4,11 @@ const { connect } = require('mongoose');
 // Importing the 'dotenv' library to load environment variables from a .env file
 require('dotenv').config();
 
+const DATABASE_URL = "mongodb://localhost:27017/Chat-app" // || process.env.DATABASE_URL;
 // Function to establish a connection to the MongoDB database
 const dbConnect = () => {
     // Calling the `connect` method of mongoose to establish the connection with the database
-    connect(process.env.DATABASE_URL, {})  // Using DATABASE_URL from the environment variables
+    connect(DATABASE_URL, {})  // Using DATABASE_URL from the environment variables
         .then(() => {
             // If the connection is successful, log the success message
             console.log("DATABASE CONNECTED!");

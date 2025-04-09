@@ -1,43 +1,26 @@
 const { Schema, model } = require('mongoose');
-const {hash} = require('bcrypt')
 
 const userSchema = Schema({
-    name: {
-        type: String,
-        required: true,
-        trim: true,
-    },
-    username: {
-        type: String,
-        required: true,
-        trim: true,
-        unique: true,
-    },
-    password: {
-        type: String,
-        required: true,
-        select: false,
-    },
+    name: { type: String, trim: true, default: null },
+    username: { type: String, trim: true, unique: true, default: null },
+    email: { type: String, default: null }, // new 
+    password: { type: String, default: null },
     avatar: {
-        public_id: {
-            type: String,
-            required: true,
-        },
-        url: {
-            type: String,
-            required: true,
-        }
+        public_id: { type: String, default: null, },
+        url: { type: String, default: null, }
     },
-    bio: {
-        type: String,
-    }
-}, {
-    timestamps: true,
-})
-
-userSchema.pre('save', async function (next) {
-    if (!this.isModified('password')) return next();
-    this.password = await hash(this.password, 10);
+    token: { type: String, default: null }, // new 
+    otp: { type: String, default: null }, // new 
+    otpExipreAt: { type: Number, default: null, }, // new 
+    tokenGenerateAt: { type: Number, default: null }, // new 
+    bio: { type: String, default: "" },
+    userIP: { type: String, default: "" }, // new 
+    deviceToken: { type: String, default: null },
+    isDeleted: { type: Boolean, default: false }, // new 
+    isBlocked: { type: Boolean, default: false }, // new 
+    createdAt: { type: Date, default: Date.now() }, // new 
+    updatedAt: { type: Date, default: Date.now() }, // new 
 });
+
 
 module.exports = model('User', userSchema);

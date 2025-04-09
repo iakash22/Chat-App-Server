@@ -16,8 +16,18 @@ const requestSchema = Schema({
         ref: "User",
         required: true,
     },
-}, {
-    timestamps: true,
-})
+    isDeleted: {
+        type: Boolean,
+        default: false,
+    },
+    createdAt: {
+        type: Number,
+        default: Date.now(),
+    },
+    updatedAt: {
+        type: Number,
+        default: Date.now(),
+    }
+});
 
 module.exports = model('Request', requestSchema);

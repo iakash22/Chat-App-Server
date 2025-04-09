@@ -9,7 +9,6 @@ exports.uploadImageCloudinary = async (files, folder, height, quality) => {
     if (quality) options.quality = quality;
     options.resource_type = "auto";
     options.public_id = uuid();
-
     const uploadPromises = files.map((file) => {
         return new Promise((resolve, reject) => {
             cloudinary.uploader.upload(
@@ -28,12 +27,24 @@ exports.uploadImageCloudinary = async (files, folder, height, quality) => {
         // console.log("result", res);
         const formattedResults = res.map((result) => ({
             public_id: result.public_id,
-            url : result.secure_url
+            url: result.secure_url
         }))
 
         return formattedResults;
     } catch (err) {
-        // console.log(err);
+        console.log(err);
         throw new Error("Error uploading files to cloudinary", err);
+    }
+}
+
+
+exports.deleteImageCloudinary = async (publicId, fileType) => {
+    try {
+        const result = await cloudinary.uploader.destroy(publicId, { resource_type: fileType });
+        console.log("Cloudinary Video Delete Response:", result);
+        return { result };
+    } catch (error) {
+        console.error("Error deleting video from Cloudinary:", error);
+        return { error: "Failed to delete video" };
     }
 }

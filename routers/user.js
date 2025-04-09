@@ -1,20 +1,18 @@
 const express = require('express');
+const controllers = require('../controllers/user');
 const { register, login, getMyProfile, searchUser, sendRequest, acceptRequest, getMyNotifications, getMyFriends, logout, getProfile } = require('../controllers/user');
 const { singleAvatar } = require('../middlewares/multer');
 const { errorMiddleware } = require('../middlewares/error');
 const { isAuthenticate } = require('../middlewares/auth');
 const { registerValidator, validatorHandler, loginValidator, sendRequestValidator, acceptRequestValidator } = require('../lib/validator');
-
+const errors = require('../constants/errors');
 const router = express.Router();
 
 router.get('/', (req, res) => {
     res.send("Hello user page!");
 })
 
-router.post('/register', singleAvatar, registerValidator(), validatorHandler, register);
-router.post('/login', loginValidator(), validatorHandler, login);
 router.get('/profile/:username', getProfile);
-router.post('/logout', logout);
 
 
 router.get('/me', isAuthenticate, getMyProfile);

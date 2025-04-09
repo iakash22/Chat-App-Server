@@ -1,6 +1,6 @@
 const { TryCatch } = require('../middlewares/error');
 const User = require('../models/user');
-const { sendToken, emitEvent, options } = require('../utils/features');
+const { sendToken, emitEvent, options, tokenGenerateToken, encryptPassword } = require('../utils/features');
 const bcrypt = require('bcrypt');
 const { ErrorHandler } = require('../utils/utility');
 const Chat = require('../models/chat');
@@ -10,34 +10,48 @@ const { getOtherMember } = require('../lib/helper');
 const { uploadImageCloudinary } = require('../utils/imageUploader');
 
 
-exports.register = TryCatch(async (req, res, next) => {
-    const { name, username, password, bio } = req.body;
-    const file = req.file;
-    // console.log(file);
+exports.register = async (payload) => {
+    try {
+        const { name, username, password, bio } = payload;
+        const file = payload?.file;
+        console.log("file : ", file);
 
-    if (!file) {
-        return next(new ErrorHandler("Please Upload Avatar", 428))
+        // if (!file) {
+            // return { status: 400, message: "Please Upload Avatar", type: "REQUIRED_FIELD" };
+            // return next(new ErrorHandler("Please Upload Avatar", 428))
+        // }
+
+        // console.log(file);
+
+        // const result = await uploadImageCloudinary([file], 'Profile');
+        // console.log("result :", result);
+        // const Avatar = {
+        //     public_id: result[0]?.public_id,
+        //     url: result[0]?.url,
+        // }
+
+        const token = tokenGenerateToken(username);
+        const tokenGenerateAt = Date.now();
+
+        const hashPassword = await encryptPassword(password);
+
+        const user = await User.create({
+            name,
+            username,
+            bio,
+            password: hashPassword,
+            avatar: {},
+            token,
+            tokenGenerateAt,
+        });
+
+        user.password = undefined;
+
+        return { status: 200, user: user, message: `Hello ${user.name}, let’s chat, connect, and have fun!` };
+    } catch (error) {
+        console.error("Error Ocurred Occurred while register user", error);
     }
-
-    // console.log(file);
-
-    const result = await uploadImageCloudinary([file], 'Profile');
-    // console.log(result);
-    const Avatar = {
-        public_id: result[0]?.public_id,
-        url: result[0]?.url,
-    }
-
-    const user = await User.create({
-        name,
-        username,
-        bio,
-        password,
-        avatar: Avatar
-    });
-
-    sendToken(res, user, next, `Hello ${user.name}, let’s chat, connect, and have fun!`);
-});
+};
 
 exports.login = TryCatch(async (req, res, next) => {
     const { username, password } = req.body;
@@ -71,7 +85,7 @@ exports.logout = TryCatch(async (req, res, next) => {
 
 exports.getMyProfile = TryCatch(async (req, res, next) => {
     const { _id, username } = req.user;
-
+    
     const data = await User.findById(_id);
 
     if (!data) {
@@ -92,8 +106,8 @@ exports.getProfile = TryCatch(async (req, res, next) => {
         return next(new ErrorHandler('username is not provide'));
     }
 
-    const data = User.findOne({ username });
-    
+    const data = User.findOne({ username }).select("username");
+
     if (!data) {
         return next(new ErrorHandler('', 404));
     }

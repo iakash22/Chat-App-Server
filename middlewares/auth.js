@@ -3,6 +3,8 @@ const { ErrorHandler } = require("../utils/utility");
 const { TryCatch } = require("./error");
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
+const errors = require("../constants/errors");
+const models = require("../models");
 
 
 exports.isAuthenticate = TryCatch(async (req, res, next) => {
@@ -78,5 +80,29 @@ exports.socketAuthenticator = async (err, socket, next) => {
     } catch (error) {
         console.log(error);
         return next(new ErrorHandler("Please login to access this route", 401));
+    }
+}
+
+exports.verifyToken = async (req,res, next) => {
+    try {
+        // console.log(req.headers);
+        const token = req.headers["authorization"]?.replace("Bearer ", "");
+        // console.log("token :", token);
+
+        const decode = jwt.decode(token);
+        console.log("decode ", decode);
+        const user = await models.User.findOne({token}).select("token tokenGenerateAt _id");
+
+        if (!user) return res.status(404).json(errors.UNAUTHORIZED_USER);
+
+        if (user?.tokenGenerateAt !== decode.tokenGenerateAt) return res.status(404).json(errors.UNAUTHORIZED_USER);
+        
+        req.decode = decode
+        req.user = user;
+
+        next()
+    } catch (error) {
+        console.error("Verify token middleware Error: ", error);
+        return res.status(500).json(errors.SERVER_ERROR);
     }
 }
